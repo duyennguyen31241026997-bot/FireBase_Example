@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,40 +17,61 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-  FirebaseFirestore db;
-  Button btAdd, btShow;
-  EditText etName, etPhone;
+    private FirebaseFirestore db;
+    private Button btAdd, btShow;
+    private EditText etTitle, etContent, etImageUrl;
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    EdgeToEdge.enable(this);
-    setContentView(R.layout.activity_main);
-    ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-      Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-      v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-      return insets;
-    });
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
-    FirebaseApp.initializeApp(this);
-    db = FirebaseFirestore.getInstance();
-    btAdd = findViewById(R.id.btAdd);
-    btShow = findViewById(R.id.btShow);
-    etName = findViewById(R.id.etName);
-    etPhone = findViewById(R.id.etPhone);
-    btAdd.setOnClickListener(this);
-    btShow.setOnClickListener(this);
-  }
+        FirebaseApp.initializeApp(this);
+        db = FirebaseFirestore.getInstance();
 
-  @Override
-  public void onClick(View view) {
-    if (view.getId() == R.id.btAdd) {
-      db.collection("users").add(new User(etName.getText().toString(), etPhone.getText().toString()));
-      etName.setText("");
-      etPhone.setText("");
-    } else if (view.getId() == R.id.btShow) {
-      Intent intent = new Intent(getBaseContext(), ShowDataActivity.class);
-      startActivity(intent);
+        btAdd = findViewById(R.id.btAdd);
+        btShow = findViewById(R.id.btShow);
+        etTitle = findViewById(R.id.etTitle);
+        etContent = findViewById(R.id.etContent);
+        etImageUrl = findViewById(R.id.etImageUrl);
+
+        btAdd.setOnClickListener(this);
+        btShow.setOnClickListener(this);
     }
-  }
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.btAdd) {
+            String title = etTitle.getText().toString().trim();
+            String content = etContent.getText().toString().trim();
+            String imageUrl = etImageUrl.getText().toString().trim();
+
+            if (title.isEmpty() || content.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập đầy đủ tiêu đề và nội dung", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Article article = new Article(title, content, imageUrl);
+            db.collection("articles").add(article)
+                    .addOnSuccessListener(documentReference -> {
+                        Toast.makeText(MainActivity.this, "Đã thêm bài viết thành công!", Toast.LENGTH_SHORT).show();
+                        etTitle.setText("");
+                        etContent.setText("");
+                        etImageUrl.setText("");
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(MainActivity.this, "Lỗi thêm bài viết: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+
+        } else if (view.getId() == R.id.btShow) {
+            Intent intent = new Intent(getBaseContext(), ShowDataActivity.class);
+            startActivity(intent);
+        }
+    }
 }
